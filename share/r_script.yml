@@ -1,0 +1,165 @@
+---
+r_script:
+   hdr_libraries_functions: |-
+      ##-----------------------------------
+      ## load libraries
+      ##-----------------------------------
+      library('lumi', quietly=TRUE)
+      library('limma', quietly=TRUE)
+      library('annotate', quietly=TRUE)
+      library('lumi<organism>put human/mouse here</organism>All.db', quietly=TRUE)
+      library("lumi<organism>put human/mouse here</organism>IDMapping", quietly=TRUE)
+      library('xtable', quietly=TRUE)
+      
+      ##-----------------------------------
+      ## declare functions
+      ##-----------------------------------
+      getNewAnnotation <- function(presentSubset) {      
+         #fix nuIDs: convert probe_id to nuID
+         presentSubset <- addNuID2lumi(presentSubset, lib.mapping='lumi<organism>put human/mouse here</organism>IDMapping')
+         #extract nuIDs
+         featureSpecialIDs <- featureNames(presentSubset)
+         #Obtain Annotation columns:
+         #get gene symbols (convert to matrix)
+         geneSymbols <- as.matrix(lookUp(featureSpecialIDs, "lumi<organism>put human/mouse here</organism>All.db", what="SYMBOL"))
+         #get probe locations (tidy up and convert to matrix)
+         probeLocations <- as.matrix(lapply(lookUp(featureSpecialIDs, "lumi<organism>put human/mouse here</organism>All.db", what="CHRLOC"),
+                                            function(x) unique(paste(names(x),x, sep=":"))))
+         #get refSeq (format and convert to matrix)
+         refSeq <- as.matrix(lapply(lookUp(featureSpecialIDs, "lumi<organism>put human/mouse here</organism>All.db", what="REFSEQ"),
+                                    function(x) paste0(x, collapse=" ")))
+         #get ensemblID
+         ensemblID <- as.matrix(lookUp(featureSpecialIDs, "lumi<organism>put human/mouse here</organism>All.db", what="ENSEMBL"))
+         #bind into a single data structure
+         m <- cbind(geneSymbols, probeLocations, refSeq, ensemblID)
+         colnames(m) <- c("geneSymbols", "probeLocations", "refSeq", "ensemblID")
+         return(m)
+      }
+      
+      createToptable <- function(presentSubset, addedAnnotation,
+                                 exptDesign, contrasts,
+                                 outputFileDir, outputFileSufix = c("filtered", "unfiltered")){
+         ## variables
+         outputFilePrefix = "diff_gene_expression_"
+         outputFileSufix <- match.arg(outputFileSufix)
+         ## function to perform eBayes fit
+         performFit <- function(exprSet, exptDesign, contrasts) {
+            fit <- lmFit(exprSet, exptDesign)
+            eBayes(contrasts.fit(fit, contrasts))
+         }
+         ## function to calculate and add the FC column to the top table
+         addFCcolumn<-function(results){
+            antiLogFC<-sapply(results[,"logFC"], function(x) ifelse(x>=0, 2^x, -(1/2^x)))
+            col.logFC<-which(colnames(results)=="logFC")
+            col.prevTologFC<-col.logFC-1
+            col.count<-ncol(results)
+            results<-cbind(results[,1:col.prevTologFC], FC=antiLogFC, results[,col.logFC:col.count])
+            return(results)
+         }
+         ## find top expressed genes by performing lmFit, then
+         ## print each contrast's top table to a file
+         fit2 <- performFit(presentSubset, exptDesign, contrasts)
+         writeLines(paste("Writing top tables of", outputFileSufix, "data...", sep=" "))
+         for (contrast in colnames(contrasts)) {
+            print (contrast)
+            ## define annotation
+            arrayIDs <- which(sampleGroups %in% unique(unlist(strsplit(as.character(gsub("-|\\(|\\)|\\+|/\\d+", " ", contrast, perl=TRUE)), split=' +'))))
+            exprValues <- exprs(presentSubset)[,arrayIDs]
+            colnames(exprValues) <- paste("normExpr", colnames(exprValues), sep="_")
+            detectionValues <- detection(presentSubset)[,arrayIDs]
+            colnames(detectionValues) <- paste("detectionPval", colnames(detectionValues), sep="_")
+            fit <- fit2
+            fit$genes <- data.frame(ID=rownames(fit$genes), probeID=fit$genes$ProbeID, targetID=fit$genes$TargetID, illuminaProbeID=fit$genes$PROBE_ID, addedAnnotation, exprValues, detectionValues)
+            results <- topTable(fit, coef=contrast,  number=length(fit$F))
+            results <- addFCcolumn(results)
+            fileName <- paste(outputFileDir, outputFilePrefix, gsub("/", "", contrast),  "_", outputFileSufix, "_toptable.txt", sep = "")
+            write.table(as.matrix(results[order(abs(results$adj.P.Val), decreasing = FALSE), TRUE]),file = fileName, sep = "\t", quote = FALSE, row.names = FALSE)
+         }  
+      }
+   stmt_function_qcreport: |-
+      lumiQCReport <- function(lumiBatch, fileName, sampleNames) { 
+         lumiBatchQC <- lumiQ(lumiBatch) 
+         colnames(exprs(lumiBatchQC)) <- sampleNames 
+         pdf(file = fileName, onefile = T, pointsize=10, width=9) 
+         plot(lumiBatchQC, what = 'boxplot') 
+         plot(lumiBatchQC, what = 'density') 
+         plot(lumiBatchQC, what = 'sampleRelation')
+         dev.off()
+         fileName
+      }
+   stmt_input: |-
+      ## files and directories bits
+      filestem <- "<file_stem>put file stem value here</file_stem>"
+      
+      ## read in targets and input files
+      writeLines("Reading in Illumina expression data...")
+      allTargets <- readTargets(paste("resources/targets_", filestem, ".txt", sep=""))
+      allRawLumi <- lumiR(paste("input/", unique(allTargets$fileName), sep=""),
+                          detectionTh=0.05, inputAnnotation=T,
+                          annotationColumn=c('REFSEQ_ID','SYMBOL','PROBE_ID', 'PROBE_SEQUENCE', 'CHROMOSOME', 'PROBE_COORDINATES'))
+   stmt_qc: |-
+      ## define outliers
+      outliers <- c(<outliers>put outliers here joined by commas</outliers>)
+      
+      ##remove outliers
+      targets <- allTargets[!allTargets$name %in% outliers,]
+      lumiObject <- allRawLumi[,targets$name]
+      
+      ## vst transform and quantile normalisation
+      writeLines("Normalising...")
+      vstLumi <- lumiT(lumiObject, method = 'vst', verbose=FALSE)
+      quantileNormLumi <- lumiN(vstLumi, method = 'quantile', verbose=FALSE)
+      
+      ## remove probes which are absent under all conditions
+      filteredQNormLumi <- quantileNormLumi[detectionCall(quantileNormLumi) > 0, TRUE]
+      
+      writeLines("Adding extra annotation...")
+      ## get annotation for both filtered and unfiltered datasets
+      unfilteredAnnotation <- getNewAnnotation(quantileNormLumi)
+      filteredAnnotation <- getNewAnnotation(filteredQNormLumi)
+   stmt_qc_report_rscript: |-
+      ## raw data QC report
+      lumiQCReport(lumiObject, paste("QC/", filestem, "_raw_qc.pdf", sep=""), paste(<sample_names>put sample name columns here</sample_names>, sep="."))
+      
+      ## normalised data QC report
+      lumiQCReport(quantileNormLumi, paste("QC/", filestem, "_qnorm_qc.pdf", sep=""), paste(<sample_names>put sample name columns here</sample_names>, sep="."))
+   stmt_qc_report_sweave: |-
+      ## raw data QC report
+      lumiBatchQCRaw <- lumiQ(lumiObject, verbose=FALSE)
+      colnames(exprs(lumiBatchQCRaw)) <- paste(<sample_names>put sample name columns here</sample_names>, sep=".") #sample names
+      
+      ## normalised data QC report
+      lumiBatchQCNormalised <- lumiQ(quantileNormLumi, verbose=FALSE)
+      colnames(exprs(lumiBatchQCNormalised)) <- paste(<sample_names>put sample name columns here</sample_names>, sep=".") #sample names
+   cmnt_analysis: |-
+      ##-------------------------------------------------------------
+      ## <name>put the name of the analysis here</name>
+      ##-------------------------------------------------------------
+      writeLines("Analysis: <name>put the name of the analysis here</name>...")
+   stmt_expFactorsSingle: |-
+      ## create experimental design
+      experimentalFactors<-<factors>put a single factor here</factors>
+   stmt_expFactorsMulti: |-
+      ## create experimental design
+      experimentalFactors<-paste(<factors>put a multiple factors here like this.- targets$factor joined by commas</factors>, sep=".")
+   stmt_expDesign: |-
+      sampleGroups <- factor(experimentalFactors, levels = unique(experimentalFactors))
+      exptDesign <- model.matrix(~ 0 + sampleGroups)
+      colnames(exptDesign) <- levels(sampleGroups)
+      ## create contrasts
+      contrasts <- makeContrasts(<contrasts>put contrasts here</contrasts>,
+                   levels = exptDesign)
+   stmt_outputDir: |-
+      ## output directory             
+      outputFileDir <- "output/<analysis_subdir>put subdirectory here DON'T FORGET! to add the / at the end</analysis_subdir>"
+   stmt_topTable: |-
+      ## create filtered toptable
+      createToptable(filteredQNormLumi, filteredAnnotation, exptDesign, contrasts, outputFileDir, outputFileSufix = "filtered")
+      
+      ## create unfiltered toptable
+      createToptable(quantileNormLumi, unfilteredAnnotation, exptDesign, contrasts, outputFileDir, outputFileSufix = "unfiltered")
+      
+      writeLines("Analysis: Treatment Comparisons... done.")
+   stmt_finish_run: |-
+      writeLines("Run complete.")
+...

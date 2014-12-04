@@ -1,0 +1,40 @@
+---
+experiment_info:
+    release_directory: |-
+        /nfs/gapi_release/MICRO/Illumina     
+illumina_info:
+    chip_mouse:
+        name: MouseWG-6_V2_0_R2_11278593_A
+        version: 2
+        annotation: http://www.switchtoi.com/pdf/Annotation%20Files/Mouse/MouseWG-6_V2_0_R2_11278593_A.bgx.zip
+    chip_human:
+        name: HumanHT-12_V4_0_R1_15002873_B
+        version: 4
+        annotation: http://www.switchtoi.com/pdf/Annotation%20Files/Human/HumanHT-12_V4_0_R1_15002873_B.bgx.zip
+analysis_info:
+    analysis_description: |-
+        Probe summaries were performed in GenomeStudio and quantile normalised in the Bioconductor package, limma. Differentially expressed genes, for each contrast, were calculated, and corrected for multiple testing using Benjamini and Hochberg. See "Analysis overview" under "Documentation" for a full description.
+    software_versions:
+        genomestudio: 2.3.4
+        r           : 12.3.5
+        bioconductor: 2.3.0
+        migbeadarray: 0.1.0
+results_info:
+    qc_description: |-
+        Two quality control documents are provided, one for raw data and one for normalised data. The plots include: (i) density: the density plot of the chips; (ii) boxplot: box plot of the chip intensities; (iii) sampleRelation: plot the sample relations.
+    results_description:
+        P1: |- 
+            Data has been sorted by significance (column: adj.P.Val).  The lower the adj.P.Val, the more significant the change in gene expression (the more in accordance the replicate beads on the arrays). Adj.P.Val and logFC (log Fold-Change: the amount by which gene expression changes) are strongly correlated, but not absolutely correlated.
+        P2: |-
+            Two adj.P.Val cut-offs can be used in microarrays: (i) significant genes are those where adj.P.Val is less than or equal to 0.01; (ii) significant genes are those where adj.P.Val is less than or equal to 0.05.  A positive logFC implies the gene is upregulated in the first of the conditions (usually ascribed to the mutant).
+        P3: |-
+            Two output files are given: (i) filtered; and (ii) unfiltered.  Unfiltered data includes all probes on the array.  Filtered data has probes removed where it fails to fluoresce above background in BOTH conditions.  Where the probe is absent from only one condition, it remains in the output file.  The filtered file should be used for downstream analysis.
+        P4: |-
+            Normalised data for each probe, in each array, is given in columns preceded by normExpr_.  Background fluoresce for each probe, is given in columns preceded by detectionPval_. Where detectionPval is above 0.05, the probe fails to fluoresce above background. The detectionPval should not be confused with adj.P.Val.  The later is an indication of the significance of differential gene expression between the two conditions.
+    annotation:
+        bioconductor:
+            human_anno: lumiHumanAll.db, version 2
+            mouse_anno: lumiMouseAll.db, version 2
+        other:
+            remoat: ReMOAT, version 2
+...

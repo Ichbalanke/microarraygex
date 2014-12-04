@@ -1,0 +1,40 @@
+---
+experiment:
+   platform    : Illumina
+   name        : Floris_Foijer_Skin_p03
+   organism    : mouse
+   description    : >
+      Floris_Foijer_Skin_p03
+   investigator:
+      user: ff3
+      name: Floris Foijer
+      mail: ff3@sanger.ac.uk
+   analyst     :
+      user: rb11
+      name: Ruben Bautista
+      mail: rb11@sanger.ac.uk
+   laboratory  :
+      user: cm13
+      name: Chris McGee			
+      mail: cm13@sanger.ac.uk
+analysis:
+   sample_set_name: Mice
+   sample_names:
+      - sampleID
+   outliers: []
+   analysis1:
+      name: >
+         Analysis 1
+      factors:
+         - groupID
+      contrasts:
+         - mut-ctrl
+   results:
+      visibility:
+         - name: Team GAPI
+           mail: gapi-help
+         - name: Jorge Soares
+           mail: js21
+         - name: Francesco Iorio
+           mail: iorio@ebi.ac.uk
+...

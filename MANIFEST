@@ -1,0 +1,16 @@
+CHANGES
+INSTALL
+README
+bin/imgex_analysis.pl
+lib/MicroarrayGEX/ExperimentFile.pm
+lib/MicroarrayGEX/InputFile.pm
+lib/MicroarrayGEX/Publisher.pm
+lib/MicroarrayGEX/TargetsFile.pm
+lib/MicroarrayGEX.pm
+share/experiment.yml
+share/info.yml
+share/r_script.yml
+share/sweave.yml
+Makefile.PL
+MANIFEST
+LICENSE

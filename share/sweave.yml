@@ -1,0 +1,121 @@
+---
+arguments:
+   mouse_array_link: http://support.illumina.com/downloads/mousewg-6_v2_product_files.ilmn 
+   mouse_array_name: MouseWG-6 v2.0 Gene Expression BeadChip
+   human_array_link: http://support.illumina.com/downloads/humanht-12_v4_product_file.ilmn
+   human_array_name: HumanHT-12 v4.0 Gene Expression BeadChip
+   extraction_software_link: http://www.illumina.com/software/genomestudio_software.ilmn 
+   extraction_software_name: Illumina GenomeStudio Software
+   remOutliers_fileSufix: .remoutlier
+   qcplots: ['boxplot', 'density', 'sampleRelation']
+tex_main_text: |-
+   \documentclass[a4paper,10pt]{article}
+   
+   \SweaveOpts{prefix.string=QC/}
+   
+   \usepackage[a4paper, top=2in, bottom=1.5in, left=1in, right=1in]{geometry}
+   \usepackage{hyperref}
+   \usepackage{helvet}
+   \renewcommand{\familydefault}{\sfdefault}
+   
+   \begin{document}
+   
+   \title{<formattedexperiment>alessandro\_bertero\_2013-12-16</formattedexperiment>}
+   \date{\today}
+
+   \maketitle
+
+   \tableofcontents
+   
+   <<libraries_functions, eval=TRUE, echo=FALSE>>=
+   <libs_funcs>put code for libraries here</libs_funcs>
+   @
+   
+   \section{Description}
+   
+   <overview>put overview text here</overview>. 
+   
+   Analysis of Illumina Microarray Gene Expression data requested by \textbf{<investigatorname>name here</investigatorname>}. 
+   
+   \section{Data Input}
+   
+   A copy of raw data in GenomeStudio format is held by the microarray facility as \texttt{<raw_data_file>alessandro\_24samples\_2013-12-18\_Sample\_Probe\_Profile.txt</raw_data_file>}.
+   
+   For all data the following array was used \href{<array_link>http://support.illumina.com/downloads/humanht-12_v4_product_file.ilmn</array_link>}{<array_name>HumanHT-12 v4.0 Gene Expression BeadChip</array_name>}
+   
+   Probe summaries were obtained prior to normalisation and analysis using \href{<extraction_software_link>http://www.illumina.com/software/genomestudio_software.ilmn</extraction_software_link>}{<extraction_software_name>Illumina GenomeStudio Software</extraction_software_name>} and using the method \href{http://scratchy.internal.sanger.ac.uk/index.php/Making_Probe_Summary_Data_in_BeadStudio}{Making Probe Summary Data in GenomeStudio}.
+   
+   <<input, eval=TRUE, echo=FALSE, results=hide>>=
+   <inputcode>put the code for input here</inputcode>
+   @
+   
+   \section{Experimental Design}
+   
+   \subsection{<sample_set_name>sample set name</sample_set_name>}
+   
+   <<targets, results=tex, echo=FALSE>>=
+   print(xtable(allTargets[,-3], caption="Targets", label="tab:targets"), include.rownames=FALSE, size="\\footnotesize", floating=FALSE)
+   @
+   
+   \section{Analysis Materials}
+   
+   Expression values in the sample probe profile were transformed (variance stabilized) and quantile normalised using \texttt{lumi}. With \texttt{limma}, a linear model fit was applied and the top differentially expressed genes were tabulated for each contrast using the method of Benjamini and Hochberg to correct the p-values.
+   
+   Analysis performed by \href{https://helix.wtgc.org/users/<analyst_user>rb11</analyst_user>}{<analyst_name>Ruben Bautista</analyst_name>} using the following files:
+   
+   \begin{itemize}
+      \item Sample Probe Profile, obtained using GenomeStudio,
+      \item \href{run:./resources/<experiment>alessandro_bertero_2013-12-16</experiment>.yml}{YAML file} containing the experiment configuration.
+      \item \href{run:./resources/targets_<experiment>alessandro_bertero_2013-12-16</experiment>.txt}{targets file} and
+      \item \href{run:./<experiment>alessandro_bertero_2013-12-16</experiment>.Rnw}{Sweave document}, with R code and explicative text, creates a \LaTeX{} document that can be converted to PDF.
+      \item \href{run:./<experiment>alessandro_bertero_2013-12-16</experiment>.R}{R script}, containing pure code runnable using R,
+   \end{itemize}
+   
+   \section{Quality Control}
+   
+   Standard \texttt{lumi} QC procedure was applied and any outliers were identified and removed.
+   
+   <<qc, echo=FALSE, results=hide>>=
+   <qc> put qc code here </qc>
+   <qcreport> put qc reports code here</qcreport>
+   @
+tex_qcreports: |-
+   \subsection{<lumiobjecttype>Raw</lumiobjecttype> data QC report}
+   
+   \begin{center}
+   
+   <rcodeqcplots>put the code for qc plots here</rcodeqcplots> 
+   \end{center}
+rcode_qcplots: |-
+   <<qc_<lumiobjecttype>raw</lumiobjecttype>_<whatplot>boxplot</whatplot>, fig=TRUE, echo=FALSE>>=
+   plot(lumiBatchQC<lumiobjecttype>Raw</lumiobjecttype>, what = '<whatplot>boxplot</whatplot>') 
+   @
+tex_results_outliers: |-
+   \subsection{Outliers}
+   
+   The following arrays have been identified as outliers and removed from the analysis, <outliers>5513649005_D, 5513649005_E</outliers>.
+tex_results: |-
+   \section{Results}
+   
+   Data has been sorted by significance (column \texttt{adj.P.Val}). The lower the adj.P.Val, the more significant the change in gene expression (the more in accordance the replicate beads on the arrays). Adj.P.Val and logFC (log Fold-Change: the amount by which gene expression changes) are strongly correlated, but not absolutely correlated.
+   
+   Two adj.P.Val cut-offs can be used in microarrays, (i) significant genes are those where adj.P.Val is less than or equal to 0.01; (ii) significant genes are those where adj.P.Val is less than or equal to 0.05. A positive logFC implies the gene is upregulated in the first of the conditions (usually ascribed to the mutant).
+   
+   Two output files in plain text format are given, (i) filtered; and (ii) unfiltered. Unfiltered data includes all probes on the array. Filtered data has probes removed where it fails to fluoresce above background in BOTH conditions. Where the probe is absent from only one condition, it remains in the output file. The filtered file should be used for downstream analysis.
+   
+   Normalised data for each probe, in each array, is given in columns preceded by normExpr\_.  Background fluoresce for each probe, is given in columns preceded by detectionPval\_. Where detectionPval is above 0.05 the probe fails to fluoresce above background. The detectionPval should not be confused with adj.P.Val. The later is an indication of the significance of differential gene expression between the two conditions.
+   
+   <<DE_analysis_design, eval=TRUE, echo=FALSE, results=hide>>=
+   <analyses>put the code for the DE analysis here</analyses>
+   @
+tex_output_title: |-
+   \subsection{<analysisname>put the name of the analysis here</analysisname>}
+   
+   \begin{description}
+   <analysisoutput>put the itemised list of output files here</analysisoutput>
+   \end{description}
+tex_output_files: |-
+   \item[<formattedcontrastitem>Group\_2 vs Group\_1</formattedcontrastitem>] \href{run:./output/<analysissubdir>put subdirectory here DONT FORGET! to add the / at the end</analysissubdir>diff_gene_expression_<formattedcontrastfile>Group_2-Group_1</formattedcontrastfile>_<outputfiletypefile>unfiltered</outputfiletypefile>_toptable.txt}{<outputfiletypedesc>unfiltered</outputfiletypedesc>}
+tex_end_document: |-
+   \end{document}
+...

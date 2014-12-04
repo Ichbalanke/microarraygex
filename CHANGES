@@ -1,0 +1,29 @@
+2014-04-11 Ruben Bautista <rb11@sanger.ac.uk>
+
+	* Change error message in Experiment.yml validation: factor columns 
+	  can't start with numbers.
+	
+2014-01-   Ruben Bautista <rb11@sanger.ac.uk>
+
+	* Complete redesign of the module, previously known as MIGBeadArray now
+	  renamed to MicroarrayGEX, preserves the philosophy of dynamically
+ 	  generated R code and publishing material.
+ 	  
+	* Wiki and other markup outputs were scraped
+	
+	* Implementation of Sweave to generate a single PDF document as output
+	  for the analysis (along with the toptables and QC plots which suffer
+	  no changes at all).
+
+	* Move from Getopt::Std to Getopt::Long
+	
+	* Multiple bug fixes and clean ups for the code, including new sub's
+	  for better manipulation of the dynamically generated outputs.
+
+Revision history for Perl module MIGBeadArray
+
+0.09 Tue Feb 21 11:56:02 2012
+    - original version; created by ExtUtils::ModuleMaker 0.51
+0.09 Wed Feb 21 13:23 2012
+    - MIGBeadArray.pm file created by ExtUtils::ModuleMaker 0.51 [DELETED]
+    - Added yaml directory to distribution
